@@ -9,6 +9,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.imk7.welearn.iakmovie.R;
+import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
@@ -32,6 +33,7 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainHolder>{
     @Override
     public void onBindViewHolder(MainHolder holder, final int position) {
         holder.titleRow.setText(mData.get(position).getTitle());
+
         Picasso.with(holder.imageRow.getContext())
                 .load(mData.get(position).getImageUrl())
                 .into(holder.imageRow);

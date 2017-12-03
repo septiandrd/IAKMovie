@@ -144,7 +144,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        Log.d("onLoadFinished : ", String.valueOf(data.getCount()));
+        mData.clear();
 
+        for (int i = 0; i < data.getCount(); i++) {
+            data.moveToPosition(i);
+
+            mData.add(new MainDao(
+                    data.getString(data.getColumnIndex(MovieContract.MovieEntry.COLUMN_TITLE)),
+                    "https://image.tmdb.org/t/p/w185/" + data.getString(data.getColumnIndex(MovieContract.MovieEntry.COLUMN_POSTER_PATH))
+            ));
+        }
+
+        mAdapter.notifyDataSetChanged();
     }
 
     @Override
