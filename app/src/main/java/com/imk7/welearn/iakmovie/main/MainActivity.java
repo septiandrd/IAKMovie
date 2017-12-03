@@ -1,16 +1,23 @@
 package com.imk7.welearn.iakmovie.main;
 
-import android.os.Handler;
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.net.Uri;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.AsyncTaskLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.imk7.welearn.iakmovie.R;
 import com.imk7.welearn.iakmovie.data.ApiClient;
-import com.imk7.welearn.iakmovie.data.MovieResponseDao;
+import com.imk7.welearn.iakmovie.data.dao.MovieResponseDao;
+import com.imk7.welearn.iakmovie.data.offline.MovieContract;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,16 +26,18 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private RecyclerView mRecyclerMain;
     private List<MainDao> mData = new ArrayList<>();
     private MainAdapter mAdapter;
+    private String TAG = MainActivity.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        getSupportLoaderManager().initLoader(0,null,this);
 
         mAdapter = new MainAdapter(mData);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
@@ -42,8 +51,33 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<MovieResponseDao> call, Response<MovieResponseDao> response) {
                 if (response.isSuccessful()) {
+
+                    Uri deleteUri = MovieContract.MovieEntry.CONTENT_URI;
+                    getContentResolver().delete(deleteUri,null,null);
                     for (MovieResponseDao.MovieData data : response.body().getResults()) {
-                        mData.add(new MainDao(data.getTitle(),"https://image.tmdb.org/t/p/w185/"+data.getPoster_path()));
+//                        mData.add(new MainDao(data.getTitle(),"https://image.tmdb.org/t/p/w185/"+data.getPoster_path()));
+                        ContentValues contentValues = new ContentValues();
+
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_FAVORITE_IDS,data.getId());
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_TITLE,data.getTitle());
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_ORI_TITLE,data.getOriginal_title());
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_VOTE_COUNT,data.getVote_count());
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_VIDEO,data.isVideo() ? 1 : 0 );
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_VOTE_AVG,data.getVote_average());
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_POPULARITY,data.getPopularity());
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_POSTER_PATH,data.getPoster_path());
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_ORIGINAL_LANG,data.getOriginal_language());
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_GENRE,"");
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_BACKDROP_PATH,data.getBackdrop_path());
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_ADULT,data.isAdult() ? 1 : 0 );
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_OVERVIEW,data.getOverview());
+                        contentValues.put(MovieContract.MovieEntry.COLUMN_RELEASE_DATE,data.getRelease_date());
+
+                        Uri uri = getContentResolver().insert(MovieContract.MovieEntry.CONTENT_URI,contentValues);
+
+                        if (uri != null){
+                            Log.d("onResponse", "INSERT DATA SUCCESS");
+                        }
                     }
                     mAdapter.notifyDataSetChanged();
                 }
@@ -71,5 +105,51 @@ public class MainActivity extends AppCompatActivity {
 
         Toast.makeText(this, "Loading...", Toast.LENGTH_SHORT).show();
     };
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        return new AsyncTaskLoader<Cursor>(getApplicationContext()) {
+            Cursor mMovieData = null;
+            @Override
+            protected void onStartLoading() {
+                if(mMovieData!=null) {
+                    deliverResult(mMovieData);
+                } else {
+                    forceLoad();
+                }
+            }
+
+            @Override
+            public Cursor loadInBackground() {
+                try {
+                    return getApplicationContext().getContentResolver().query(MovieContract.MovieEntry.CONTENT_URI,
+                            null,
+                            null,
+                            null,
+                            MovieContract.MovieEntry._ID);
+                } catch (Exception e) {
+                    Log.e(TAG,"Failed to asynchronously load data \n" + e.getMessage());
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+
+            public void deliverResult(Cursor data) {
+                mMovieData = data;
+                super.deliverResult(data);
+            }
+        };
+//        return null;
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+
+    }
 
 }

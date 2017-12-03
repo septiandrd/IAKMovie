@@ -1,4 +1,4 @@
-package com.imk7.welearn.iakmovie.data;
+package com.imk7.welearn.iakmovie.data.dao;
 
 import java.util.ArrayList;
 import java.util.List;

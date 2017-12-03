@@ -1,5 +1,7 @@
 package com.imk7.welearn.iakmovie.data;
 
+import com.imk7.welearn.iakmovie.data.dao.MovieResponseDao;
+
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
